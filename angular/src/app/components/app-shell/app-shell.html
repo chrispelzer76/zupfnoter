@@ -1,0 +1,63 @@
+<app-toolbar
+  [currentExtract]="currentExtract()"
+  [viewPerspective]="viewPerspective()"
+  [statusMessage]="statusMessage()"
+  [isPlaying]="isPlaying()"
+  (render)="onRender()"
+  (extractChange)="onExtractChange($event)"
+  (viewChange)="onViewChange($event)"
+  (toggleConfig)="onToggleConfig()"
+  (printA3)="onPrintA3()"
+  (printA4)="onPrintA4()"
+  (play)="onPlay()"
+  (stopPlay)="onStop()"
+  (speedChange)="onSpeedChange($event)"
+/>
+
+<mat-sidenav-container class="main-container">
+  <!-- Config sidebar -->
+  <mat-sidenav
+    [opened]="configOpen()"
+    mode="side"
+    position="start"
+    class="config-sidenav"
+  >
+    <app-config-editor />
+  </mat-sidenav>
+
+  <!-- Main content area -->
+  <mat-sidenav-content class="content-area">
+    <div class="panels" [class.editor-only]="!showHarp()" [class.harp-only]="!showEditor()">
+
+      @if (showEditor()) {
+        <div class="panel editor-panel">
+          <app-editor-pane
+            [initialText]="currentAbcText()"
+            (textChanged)="onAbcTextChange($event)"
+          />
+        </div>
+      }
+
+      @if (showHarp()) {
+        <div class="panel preview-panel">
+          <!-- Tune notation preview (abc2svg SVG) -->
+          <div class="tune-section">
+            <app-tune-preview
+              [svgContent]="tuneSvg()"
+              (noteClicked)="onNoteClicked($event)"
+            />
+          </div>
+
+          <!-- Harpnote preview (Drawing Model SVG) -->
+          <div class="harpnote-section">
+            <app-harpnote-preview
+              [sheet]="currentSheet()"
+              (noteClicked)="onNoteClicked($event)"
+            />
+          </div>
+        </div>
+      }
+
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

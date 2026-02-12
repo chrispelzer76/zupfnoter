@@ -1,0 +1,12 @@
+version: '3'
+services:
+  zupfnoter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app/SRC_Zupfnoter/src
+    ports:
+      - "9292:9292"
+    volumes:
+      - .:/app
+    command: bundle exec rake server --trace

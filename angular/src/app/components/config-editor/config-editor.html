@@ -1,0 +1,107 @@
+<div class="config-editor">
+  <h3>Configuration</h3>
+
+  <!-- Instrument preset -->
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>Instrument</mat-panel-title>
+    </mat-expansion-panel-header>
+    <div class="preset-buttons">
+      @for (inst of instruments; track inst) {
+        <button mat-stroked-button (click)="applyInstrument(inst)" class="preset-btn">
+          {{ inst }}
+        </button>
+      }
+    </div>
+  </mat-expansion-panel>
+
+  <!-- Layout settings -->
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>Layout</mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>X Spacing</mat-label>
+      <input matInput type="number" step="0.5"
+             [ngModel]="getConf('layout.X_SPACING')"
+             (ngModelChange)="setConf('layout.X_SPACING', $event)">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Pitch Offset</mat-label>
+      <input matInput type="number"
+             [ngModel]="getConf('layout.PITCH_OFFSET')"
+             (ngModelChange)="setConf('layout.PITCH_OFFSET', $event)">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Y Scale</mat-label>
+      <input matInput type="number" step="0.5"
+             [ngModel]="getConf('layout.Y_SCALE')"
+             (ngModelChange)="setConf('layout.Y_SCALE', $event)">
+    </mat-form-field>
+
+    <mat-checkbox
+      [ngModel]="getConf('layout.limit_a3')"
+      (ngModelChange)="setConf('layout.limit_a3', $event)">
+      Limit to A3
+    </mat-checkbox>
+
+    <mat-checkbox
+      [ngModel]="getConf('layout.bottomup')"
+      (ngModelChange)="setConf('layout.bottomup', $event)">
+      Bottom up
+    </mat-checkbox>
+  </mat-expansion-panel>
+
+  <!-- Line widths -->
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>Line Widths</mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Thin</mat-label>
+      <input matInput type="number" step="0.05"
+             [ngModel]="getConf('layout.LINE_THIN')"
+             (ngModelChange)="setConf('layout.LINE_THIN', $event)">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Medium</mat-label>
+      <input matInput type="number" step="0.05"
+             [ngModel]="getConf('layout.LINE_MEDIUM')"
+             (ngModelChange)="setConf('layout.LINE_MEDIUM', $event)">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Thick</mat-label>
+      <input matInput type="number" step="0.05"
+             [ngModel]="getConf('layout.LINE_THICK')"
+             (ngModelChange)="setConf('layout.LINE_THICK', $event)">
+    </mat-form-field>
+  </mat-expansion-panel>
+
+  <!-- Note sizes -->
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>Note Size</mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="size-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Ellipse W</mat-label>
+        <input matInput type="number" step="0.1"
+               [ngModel]="getConf('layout.ELLIPSE_SIZE')?.[0]"
+               (ngModelChange)="setConf('layout.ELLIPSE_SIZE', [$event, getConf('layout.ELLIPSE_SIZE')?.[1]])">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Ellipse H</mat-label>
+        <input matInput type="number" step="0.1"
+               [ngModel]="getConf('layout.ELLIPSE_SIZE')?.[1]"
+               (ngModelChange)="setConf('layout.ELLIPSE_SIZE', [getConf('layout.ELLIPSE_SIZE')?.[0], $event])">
+      </mat-form-field>
+    </div>
+  </mat-expansion-panel>
+</div>

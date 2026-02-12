@@ -1,6 +1,6 @@
 #Gemfile
 source 'https://rubygems.org'
-ruby "~>2.4.1"
+ruby ">=2.4.1"
 
 gem 'rake'
 gem 'sass'
@@ -20,10 +20,5 @@ gem 'redcarpet'
 gem 'json-schema-generator'
 gem 'neatjson'
 gem 'rb-readline'	
+gem 'wortsammler', "~> 2.0.0.dev4"
 
-
-# had trouble to install nokogiri on windows
-# so I build the manual on mac os only
-install_if -> { RUBY_PLATFORM =~ /darwin/ } do
-  gem 'wortsammler', "~> 2.0.0.dev4"
-  end

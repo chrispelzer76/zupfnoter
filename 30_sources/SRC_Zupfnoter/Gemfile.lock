@@ -1,90 +1,100 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    ast (2.4.0)
-    coderay (1.1.2)
-    concurrent-ruby (1.1.4)
+    ast (2.4.3)
+    base64 (0.3.0)
+    coderay (1.1.3)
+    concurrent-ruby (1.3.5)
+    diff-lcs (1.6.2)
     diffy (2.1.4)
-    ffi (1.9.25)
-    ffi (1.9.25-x64-mingw32)
-    ffi (1.9.25-x86-mingw32)
-    graphviz (1.1.0)
+    ffi (1.17.2-x86_64-linux-gnu)
+    graphviz (1.2.1)
       process-pipeline
     hike (1.2.3)
     json-schema-generator (0.0.9)
       jsonpath
-    jsonpath (0.9.8)
+    jsonpath (1.1.5)
       multi_json
-      to_regexp (~> 0.2.1)
-    logger (1.3.0)
-    method_source (0.9.2)
+    logger (1.7.0)
+    method_source (1.1.0)
     mini_portile2 (2.3.0)
-    multi_json (1.13.1)
-    neatjson (0.8.4)
+    multi_json (1.15.0)
+    neatjson (0.10.5)
     nokogiri (1.8.2)
-      mini_portile2 (~> 2.3.0)
-    nokogiri (1.8.2-x64-mingw32)
-      mini_portile2 (~> 2.3.0)
-    nokogiri (1.8.2-x86-mingw32)
       mini_portile2 (~> 2.3.0)
     opal (0.11.4)
       ast (>= 2.3.0)
       hike (~> 1.2)
       parser (= 2.3.3.1)
       sourcemap (~> 0.1.0)
-    opal-jquery (0.4.3)
-      opal (>= 0.10.0, < 0.12.0)
-    opal-sprockets (0.4.2.0.11.0.3.1)
+    opal-jquery (0.5.2)
+      opal (>= 0.10.0, < 2.0)
+    opal-sprockets (0.4.3.0.11.0.3.7)
       opal (~> 0.11.0)
-      sprockets (~> 3.1)
+      sprockets (~> 3.7)
       tilt (>= 1.4)
     parser (2.3.3.1)
       ast (~> 2.2)
     polyglot (0.3.5)
-    process-group (1.1.0)
-    process-pipeline (1.0.1)
+    process-group (1.2.4)
+      process-terminal (~> 0.2.0)
+    process-pipeline (1.0.2)
       process-group
-    pry (0.12.2)
-      coderay (~> 1.1.0)
-      method_source (~> 0.9.0)
-    rack (2.0.6)
-    rake (12.3.2)
-    rb-fsevent (0.10.3)
-    rb-inotify (0.10.0)
+    process-terminal (0.2.0)
+      ffi
+    pry (0.15.2)
+      coderay (~> 1.1)
+      method_source (~> 1.0)
+    rack (2.2.21)
+    rake (13.3.1)
+    rb-fsevent (0.11.2)
+    rb-inotify (0.11.1)
       ffi (~> 1.0)
     rb-readline (0.5.5)
-    redcarpet (3.4.0)
-    rubyXL (3.3.33)
+    redcarpet (3.6.1)
+    rspec (3.13.2)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-core (3.13.6)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.7)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.6)
+    rubyXL (3.4.12)
       nokogiri (>= 1.4.4)
-      rubyzip (>= 1.1.6)
-    rubyzip (1.2.2)
-    sass (3.7.2)
+      rubyzip (>= 1.3.0)
+    rubyzip (2.4.1)
+    sass (3.7.4)
       sass-listen (~> 4.0.0)
     sass-listen (4.0.0)
       rb-fsevent (~> 0.9, >= 0.9.4)
       rb-inotify (~> 0.9, >= 0.9.7)
     sourcemap (0.1.1)
-    sprockets (3.7.2)
+    sprockets (3.7.5)
+      base64
       concurrent-ruby (~> 1.0)
       rack (> 1, < 3)
-    tilt (2.0.9)
-    to_regexp (0.2.1)
-    treetop (1.6.10)
+    tilt (2.6.1)
+    treetop (1.6.18)
       polyglot (~> 0.3)
     vector2d (2.1.0)
-    wortsammler (2.0.0.dev4)
+    wortsammler (2.0.1)
       diffy (~> 2.1.3)
       logger
       nokogiri (= 1.8.2)
+      rspec
       rubyXL
       rubyzip
       treetop
     zip (2.0.2)
 
 PLATFORMS
-  ruby
-  x64-mingw32
-  x86-mingw32
+  x86_64-linux
 
 DEPENDENCIES
   bundler
@@ -104,7 +114,7 @@ DEPENDENCIES
   zip
 
 RUBY VERSION
-   ruby 2.4.1p111
+   ruby 2.7.8p225
 
 BUNDLED WITH
-   2.0.1
+   2.3.26

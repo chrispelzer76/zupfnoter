@@ -1,0 +1,9 @@
+{
+  "render": "Rendern",
+  "print_a3": "Drucken A3",
+  "print_a4": "Drucken A4",
+  "no_abc_text": "Kein ABC-Text zum Rendern",
+  "render_first": "Erst rendern, dann drucken",
+  "rendered_ok": "Erfolgreich gerendert",
+  "ready": "Bereit"
+}

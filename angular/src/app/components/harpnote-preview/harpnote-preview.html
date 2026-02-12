@@ -1,0 +1,132 @@
+<div class="preview-controls">
+  <button (click)="zoomIn()">+</button>
+  <button (click)="zoomOut()">&minus;</button>
+  <button (click)="zoomFit()">Fit</button>
+</div>
+
+@if (sheet(); as s) {
+  <div class="svg-wrapper" [style.transform]="'scale(' + zoom() + ')'">
+    <svg #svgElement
+         [attr.viewBox]="viewBox()"
+         xmlns="http://www.w3.org/2000/svg"
+         class="harpnote-svg"
+         preserveAspectRatio="xMidYMid meet">
+
+      @for (item of s.children; track item.znid || $index) {
+        @if (item.visible) {
+          <!-- Ellipse (Note) -->
+          @if (isEllipse(item)) {
+            <g (click)="onItemClick(item)" class="clickable" [class.highlighted]="isHighlighted(item)">
+              @if (!item.rect) {
+                <ellipse
+                  [attr.cx]="item.center[0]"
+                  [attr.cy]="item.center[1]"
+                  [attr.rx]="item.size[0]"
+                  [attr.ry]="item.size[1]"
+                  [attr.fill]="item.fill === 'filled' ? item.color : 'none'"
+                  [attr.stroke]="item.color"
+                  [attr.stroke-width]="item.lineWidth"
+                />
+              } @else {
+                <rect
+                  [attr.x]="item.center[0] - item.size[0]"
+                  [attr.y]="item.center[1] - item.size[1]"
+                  [attr.width]="item.size[0] * 2"
+                  [attr.height]="item.size[1] * 2"
+                  [attr.fill]="item.fill === 'filled' ? item.color : 'none'"
+                  [attr.stroke]="item.color"
+                  [attr.stroke-width]="item.lineWidth"
+                />
+              }
+              <!-- Dotted note: small companion dot -->
+              @if (item.dotted) {
+                <circle
+                  [attr.cx]="item.center[0] + item.size[0] + 1.5"
+                  [attr.cy]="item.center[1]"
+                  r="0.6"
+                  [attr.fill]="item.color"
+                />
+              }
+              <!-- Bar over note -->
+              @if (item.hasBarOver) {
+                <line
+                  [attr.x1]="item.center[0] - item.size[0]"
+                  [attr.y1]="item.center[1] - item.size[1] - 1"
+                  [attr.x2]="item.center[0] + item.size[0]"
+                  [attr.y2]="item.center[1] - item.size[1] - 1"
+                  [attr.stroke]="item.color"
+                  [attr.stroke-width]="item.lineWidth * 2"
+                />
+              }
+            </g>
+          }
+
+          <!-- FlowLine -->
+          @if (isFlowLine(item)) {
+            <line
+              [attr.x1]="item.from[0]"
+              [attr.y1]="item.from[1]"
+              [attr.x2]="item.to[0]"
+              [attr.y2]="item.to[1]"
+              [attr.stroke]="item.color"
+              [attr.stroke-width]="item.lineWidth"
+              [attr.stroke-dasharray]="dashArray(item.style)"
+            />
+          }
+
+          <!-- Annotation (Text) -->
+          @if (isAnnotation(item)) {
+            <text
+              [attr.x]="item.center[0]"
+              [attr.y]="item.center[1]"
+              [attr.fill]="item.color"
+              [attr.font-size]="getFontSize(item.style)"
+              [attr.font-weight]="getFontWeight(item.style)"
+              [attr.font-style]="getFontStyle(item.style)"
+              [attr.text-anchor]="item.align === 'right' ? 'end' : item.align === 'center' ? 'middle' : 'start'"
+              [attr.dominant-baseline]="item.baseline"
+              (click)="onItemClick(item)"
+              class="clickable"
+            >{{ item.text }}</text>
+          }
+
+          <!-- Glyph (Rest symbols, fermata, etc.) -->
+          @if (isGlyph(item)) {
+            <g [attr.transform]="'translate(' + item.center[0] + ',' + item.center[1] + ') scale(' + item.size[0] + ',' + item.size[1] + ')'"
+               (click)="onItemClick(item)"
+               class="clickable">
+              <path
+                [attr.d]="pathToString(item.glyphPath)"
+                [attr.fill]="item.filled ? item.color : 'none'"
+                [attr.stroke]="item.color"
+                [attr.stroke-width]="0.2"
+              />
+              @if (item.dotted) {
+                <circle
+                  [attr.cx]="item.glyphWidth / 2 + 2"
+                  cy="0"
+                  r="0.8"
+                  [attr.fill]="item.color"
+                />
+              }
+            </g>
+          }
+
+          <!-- Path -->
+          @if (isPath(item)) {
+            <path
+              [attr.d]="pathToString(item.path)"
+              [attr.fill]="item.fill === 'filled' ? item.color : 'none'"
+              [attr.stroke]="item.color"
+              [attr.stroke-width]="item.lineWidth"
+            />
+          }
+        }
+      }
+    </svg>
+  </div>
+} @else {
+  <div class="no-content">
+    <p>No harpnotes to display. Click "Render" to generate.</p>
+  </div>
+}

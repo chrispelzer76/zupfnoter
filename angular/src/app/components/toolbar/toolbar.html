@@ -1,0 +1,79 @@
+<mat-toolbar color="primary" class="toolbar">
+  <span class="app-title">Zupfnoter</span>
+
+  <!-- Render button -->
+  <button mat-raised-button (click)="onRender()" matTooltip="Render harpnotes">
+    <mat-icon>play_arrow</mat-icon>
+    Render
+  </button>
+
+  <!-- Extract selector -->
+  <mat-button-toggle-group
+    [value]="'' + currentExtract()"
+    (change)="onExtractChange($event.value)"
+    class="extract-toggle"
+  >
+    @for (ex of extracts; track ex) {
+      <mat-button-toggle [value]="'' + ex">{{ ex }}</mat-button-toggle>
+    }
+  </mat-button-toggle-group>
+
+  <!-- View perspective -->
+  <mat-button-toggle-group
+    [value]="viewPerspective()"
+    (change)="onViewChange($event.value)"
+    class="view-toggle"
+  >
+    <mat-button-toggle value="all" matTooltip="Show all panels">
+      <mat-icon>view_column</mat-icon>
+    </mat-button-toggle>
+    <mat-button-toggle value="editor" matTooltip="Editor only">
+      <mat-icon>edit</mat-icon>
+    </mat-button-toggle>
+    <mat-button-toggle value="harp" matTooltip="Harp view only">
+      <mat-icon>music_note</mat-icon>
+    </mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <!-- Play/Stop button -->
+  <button mat-icon-button (click)="onPlayStop()" matTooltip="Play / Stop">
+    <mat-icon>{{ isPlaying() ? 'stop' : 'play_circle' }}</mat-icon>
+  </button>
+
+  <!-- Speed menu -->
+  <button mat-icon-button [matMenuTriggerFor]="speedMenu" matTooltip="Playback speed">
+    <mat-icon>speed</mat-icon>
+  </button>
+  <mat-menu #speedMenu="matMenu">
+    @for (s of speeds; track s.value) {
+      <button mat-menu-item (click)="onSpeedChange(s.value)">
+        {{ s.label }}
+      </button>
+    }
+  </mat-menu>
+
+  <!-- Print menu -->
+  <button mat-icon-button [matMenuTriggerFor]="printMenu" matTooltip="Print / Export PDF">
+    <mat-icon>print</mat-icon>
+  </button>
+  <mat-menu #printMenu="matMenu">
+    <button mat-menu-item (click)="onPrintA3()">
+      <mat-icon>description</mat-icon>
+      <span>Print A3</span>
+    </button>
+    <button mat-menu-item (click)="onPrintA4()">
+      <mat-icon>note</mat-icon>
+      <span>Print A4</span>
+    </button>
+  </mat-menu>
+
+  <!-- Config toggle -->
+  <button mat-icon-button (click)="onToggleConfig()" matTooltip="Toggle configuration panel">
+    <mat-icon>settings</mat-icon>
+  </button>
+
+  <span class="spacer"></span>
+
+  <!-- Status -->
+  <span class="status-text">{{ statusMessage() }}</span>
+</mat-toolbar>

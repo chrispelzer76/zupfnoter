@@ -1,0 +1,63 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.main-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.config-sidenav {
+  width: 350px;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.content-area {
+  height: 100%;
+  overflow: hidden;
+}
+
+.panels {
+  display: flex;
+  height: 100%;
+  gap: 4px;
+
+  &.editor-only .editor-panel {
+    flex: 1;
+  }
+
+  &.harp-only .preview-panel {
+    flex: 1;
+  }
+}
+
+.panel {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.editor-panel {
+  border-right: 1px solid var(--mat-sys-outline-variant);
+}
+
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.tune-section {
+  flex: 0 0 30%;
+  overflow: auto;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.harpnote-section {
+  flex: 1;
+  overflow: auto;
+}

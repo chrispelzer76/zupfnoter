@@ -1,0 +1,36 @@
+.config-editor {
+  padding: 8px;
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.preset-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preset-btn {
+  text-align: left;
+  font-size: 12px;
+}
+
+.size-row {
+  display: flex;
+  gap: 8px;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+mat-expansion-panel {
+  margin-bottom: 4px;
+}
