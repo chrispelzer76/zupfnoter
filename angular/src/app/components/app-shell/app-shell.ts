@@ -59,6 +59,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   // --- Last parse result for playback ---
   private lastParseResult: AbcParseResult | null = null;
   private subscriptions: Subscription[] = [];
+  /** Currently selected startChar for play-from-selection (0 = start) */
+  private selectedStartChar = 0;
 
   // --- Computed ---
   showEditor = computed(() => this.viewPerspective() !== 'harp');
@@ -220,9 +222,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      this.playerService.playEvents(events);
+      this.playerService.playEvents(events, this.selectedStartChar);
       this.isPlaying.set(true);
-      this.statusMessage.set('Playing...');
+      const fromInfo = this.selectedStartChar > 0 ? ` (from pos ${this.selectedStartChar})` : '';
+      this.statusMessage.set(`Playing...${fromInfo}`);
     } catch (e: any) {
       console.error('Play error:', e);
       this.statusMessage.set(`Play error: ${e.message}`);
@@ -244,6 +247,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   /** Cross-highlight: a note was clicked in tune or harpnote panel */
   onNoteClicked(origin: { startChar: number; endChar: number }): void {
+    this.selectedStartChar = origin.startChar;
     // Highlight in editor
     this.editorPane?.highlightRange(origin.startChar, origin.endChar);
     // Highlight in tune preview
@@ -254,6 +258,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   /** Cross-highlight: cursor/selection changed in the ABC editor */
   onEditorSelectionChange(sel: { start: number; end: number }): void {
+    this.selectedStartChar = sel.start;
     if (sel.start === sel.end) {
       // Single cursor position — find the note at that position
       this.tunePreview?.highlightRange(sel.start, sel.start + 1);

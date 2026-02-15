@@ -32,37 +32,38 @@ const SVG_UNITS_PER_STEP = 3;
     :host { display: block; height: 100%; overflow: auto; }
     .tune-preview {
       padding: 8px;
-      :deep(svg) {
-        max-width: 100%;
-        height: auto;
-      }
-      /* abcref rects: transparent by default, clickable */
-      :deep(rect.abcref) {
-        fill: #ff0000;
-        fill-opacity: 0;
-        cursor: pointer;
-      }
-      :deep(rect.abcref[data-type="note"]) {
-        cursor: ns-resize;
-      }
-      :deep(rect.abcref:hover) {
-        fill-opacity: 0.12;
-      }
-      /* Highlighted abcref rect — red background behind note */
-      :deep(rect.abcref.highlight) {
-        fill-opacity: 0.3 !important;
-      }
-      /* Highlighted note group — color the note heads red */
-      :deep(g.highlight) {
-        opacity: 1;
-      }
-      :deep(g.highlight path) {
-        fill: #d50000 !important;
-      }
-      /* Dragging feedback */
-      :deep(g.dragging) {
-        opacity: 0.7;
-      }
+    }
+    /* ::ng-deep required to style innerHTML SVG content (no _ngcontent attrs) */
+    :host ::ng-deep svg {
+      max-width: 100%;
+      height: auto;
+    }
+    /* abcref rects: transparent by default, clickable */
+    :host ::ng-deep rect.abcref {
+      fill: #ff0000;
+      fill-opacity: 0;
+      cursor: pointer;
+    }
+    :host ::ng-deep rect.abcref[data-type="note"] {
+      cursor: ns-resize;
+    }
+    :host ::ng-deep rect.abcref:hover {
+      fill-opacity: 0.12;
+    }
+    /* Highlighted abcref rect — red background behind note */
+    :host ::ng-deep rect.abcref.highlight {
+      fill-opacity: 0.3 !important;
+    }
+    /* Highlighted note group — color the note heads red */
+    :host ::ng-deep g.highlight {
+      opacity: 1;
+    }
+    :host ::ng-deep g.highlight path {
+      fill: #d50000 !important;
+    }
+    /* Dragging feedback */
+    :host ::ng-deep g.dragging {
+      opacity: 0.7;
     }
   `],
 })

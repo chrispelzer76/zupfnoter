@@ -87,8 +87,8 @@ export class PlayerService {
     this.playerEvents = events;
   }
 
-  /** Play the loaded events */
-  play(): void {
+  /** Play the loaded events, optionally starting from a character position */
+  play(startChar: number = 0): void {
     if (!this.abcPlay || !this.playerEvents) return;
 
     // Resume AudioContext if suspended (browser autoplay policy)
@@ -96,14 +96,14 @@ export class PlayerService {
       this.audioContext.resume();
     }
 
-    this.abcPlay.play(0, 1000000, this.playerEvents);
+    this.abcPlay.play(startChar, 1000000, this.playerEvents);
     this.playing.set(true);
   }
 
   /** Load events and immediately play */
-  playEvents(events: any[]): void {
+  playEvents(events: any[], startChar: number = 0): void {
     this.loadEvents(events);
-    this.play();
+    this.play(startChar);
   }
 
   /** Stop playback */
