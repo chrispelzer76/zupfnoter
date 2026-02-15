@@ -38,7 +38,7 @@ const SVG_UNITS_PER_STEP = 3;
       }
       /* abcref rects: transparent by default, clickable */
       :deep(rect.abcref) {
-        fill: #ffd54f;
+        fill: #ff0000;
         fill-opacity: 0;
         cursor: pointer;
       }
@@ -46,18 +46,18 @@ const SVG_UNITS_PER_STEP = 3;
         cursor: ns-resize;
       }
       :deep(rect.abcref:hover) {
-        fill-opacity: 0.15;
+        fill-opacity: 0.12;
       }
-      /* Highlighted abcref rect */
+      /* Highlighted abcref rect — red background behind note */
       :deep(rect.abcref.highlight) {
-        fill-opacity: 0.5 !important;
+        fill-opacity: 0.3 !important;
       }
-      /* Highlighted note group — color the note heads */
+      /* Highlighted note group — color the note heads red */
       :deep(g.highlight) {
         opacity: 1;
       }
       :deep(g.highlight path) {
-        fill: #e65100 !important;
+        fill: #d50000 !important;
       }
       /* Dragging feedback */
       :deep(g.dragging) {

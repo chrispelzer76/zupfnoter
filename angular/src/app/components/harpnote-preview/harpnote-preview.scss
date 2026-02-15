@@ -42,23 +42,23 @@
   }
 }
 
-/* Highlighted elements (notes, glyphs, annotations) */
+/* Highlighted elements (notes, glyphs, annotations) — red */
 .highlighted ellipse,
 .highlighted rect:not([fill="white"]) {
-  stroke: #e65100;
+  stroke: #d50000;
   stroke-width: 0.8;
 }
 
 .highlighted circle {
-  fill: #e65100;
+  fill: #d50000;
 }
 
 .highlighted text {
-  fill: #e65100;
+  fill: #d50000;
 }
 
 .highlighted path {
-  fill: #e65100;
+  fill: #d50000;
 }
 
 .no-content {

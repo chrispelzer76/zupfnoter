@@ -28,6 +28,7 @@ export class EditorPaneComponent implements AfterViewInit, OnDestroy {
 
   private editor!: ace.Ace.Editor;
   private suppressChange = false;
+  private suppressSelection = false;
 
   constructor() {
     // React to external text changes (preserve cursor position for drag edits)
@@ -78,6 +79,7 @@ export class EditorPaneComponent implements AfterViewInit, OnDestroy {
     // Emit selection changes (debounced to avoid highlighting flicker)
     let selDebounce: any;
     this.editor.selection.on('changeSelection', () => {
+      if (this.suppressSelection) return;
       clearTimeout(selDebounce);
       selDebounce = setTimeout(() => {
         const range = this.editor.selection.getRange();
@@ -114,15 +116,18 @@ export class EditorPaneComponent implements AfterViewInit, OnDestroy {
     this.editor.scrollToLine(pos.row, true, true, () => {});
   }
 
-  /** Highlight a character range in the editor */
+  /** Highlight a character range in the editor (suppresses selectionChanged output) */
   highlightRange(startOffset: number, endOffset: number): void {
     if (!this.editor) return;
+    this.suppressSelection = true;
     const doc = this.editor.session.getDocument();
     const start = doc.indexToPosition(startOffset, 0);
     const end = doc.indexToPosition(endOffset, 0);
     const range = new ace.Range(start.row, start.column, end.row, end.column);
     this.editor.selection.setRange(range);
     this.editor.scrollToLine(start.row, true, true, () => {});
+    // Release suppress after the debounce window would have fired
+    setTimeout(() => { this.suppressSelection = false; }, 200);
   }
 
   /** Set error/warning annotations in the gutter */
