@@ -107,6 +107,13 @@ export class EditorPaneComponent implements AfterViewInit, OnDestroy {
     return this.editor?.getValue() ?? '';
   }
 
+  /** Get current selection start offset (character index) */
+  getSelectionStart(): number {
+    if (!this.editor) return 0;
+    const range = this.editor.selection.getRange();
+    return this.editor.session.getDocument().positionToIndex(range.start);
+  }
+
   /** Set cursor to a specific character offset */
   setCursorAtOffset(offset: number): void {
     if (!this.editor) return;

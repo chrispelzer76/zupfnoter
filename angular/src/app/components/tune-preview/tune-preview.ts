@@ -1,4 +1,4 @@
-import { Component, input, output, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
+import { Component, input, output, computed, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 /** Emitted when a note is dragged to a new pitch */
@@ -78,11 +78,14 @@ export class TunePreviewComponent implements AfterViewChecked {
   private boundHandlers = false;
   private drag: DragState | null = null;
 
-  constructor(private sanitizer: DomSanitizer) {}
+  /** Computed signal: only creates a new SafeHtml when svgContent actually changes.
+   *  A plain method would return a new wrapper on every change-detection cycle,
+   *  causing Angular to re-render innerHTML and wipe .highlight classes. */
+  sanitizedSvg = computed(() =>
+    this.sanitizer.bypassSecurityTrustHtml(this.svgContent())
+  );
 
-  sanitizedSvg(): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this.svgContent());
-  }
+  constructor(private sanitizer: DomSanitizer) {}
 
   ngAfterViewChecked(): void {
     const svg = this.svgContent();

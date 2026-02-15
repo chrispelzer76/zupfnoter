@@ -26,6 +26,8 @@ export class PlayerService {
   private audioContext: AudioContext | null = null;
   private abcPlay: any = null;
   private playerEvents: any[] | null = null;
+  /** Guard against late onnote callbacks after stop */
+  private playGeneration = 0;
 
   /** Initialize audio context and abc2svg play module */
   init(): void {
@@ -64,6 +66,8 @@ export class PlayerService {
         this.songEnd$.next();
       },
       onnote: (index: number, on: boolean, _custom: any) => {
+        // Ignore late callbacks from a previous play session
+        if (!this.playing()) return;
         const event: NoteEvent = { index, on };
         if (on) {
           this.noteOn$.next(event);
@@ -87,7 +91,11 @@ export class PlayerService {
     this.playerEvents = events;
   }
 
-  /** Play the loaded events, optionally starting from a character position */
+  /**
+   * Play the loaded events, optionally starting from an ABC character position.
+   * Note: AbcPlay.play(istart, iend, events) uses EVENT ARRAY INDICES,
+   * not character positions. We convert startChar to the matching event index.
+   */
   play(startChar: number = 0): void {
     if (!this.abcPlay || !this.playerEvents) return;
 
@@ -96,7 +104,27 @@ export class PlayerService {
       this.audioContext.resume();
     }
 
-    this.abcPlay.play(startChar, 1000000, this.playerEvents);
+    // Find the event index for the given ABC source position.
+    // Events are [istart_abc, time, instrument, pitch, duration, volume].
+    // e[0] = ABC source character position of the note.
+    // IMPORTANT: events are sorted by TIME (e[1]), NOT by character position.
+    // A linear scan for e[0] >= startChar would hit a wrong voice's event.
+    // Instead, find the event with the closest matching character position.
+    let evtIdx = 0;
+    if (startChar > 0) {
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < this.playerEvents.length; i++) {
+        const dist = this.playerEvents[i][0] - startChar;
+        if (dist >= 0 && dist < bestDist) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      }
+      if (bestIdx >= 0) evtIdx = bestIdx;
+    }
+
+    this.abcPlay.play(evtIdx, this.playerEvents.length, this.playerEvents);
     this.playing.set(true);
   }
 
