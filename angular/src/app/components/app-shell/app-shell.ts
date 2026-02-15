@@ -23,6 +23,8 @@ import { I18nService } from '../../services/i18n.service';
 import { createDefaultConf, CONFIG_SEPARATOR } from '../../services/init-conf';
 import { Song } from '../../models/song';
 import { Sheet } from '../../models/drawing';
+import { applyPitchDelta } from '../../utils/abc-pitch.util';
+import { NoteDragEvent } from '../tune-preview/tune-preview';
 
 export type ViewPerspective = 'all' | 'editor' | 'harp';
 
@@ -260,6 +262,16 @@ export class AppShellComponent implements OnInit, OnDestroy {
       // Range selection — highlight all matching notes
       this.tunePreview?.highlightRange(sel.start, sel.end);
       this.harpPreview?.highlightRange(sel.start, sel.end);
+    }
+  }
+
+  /** Handle note drag in tune preview: apply pitch delta to ABC text and re-render */
+  onNoteDragged(event: NoteDragEvent): void {
+    const text = this.currentAbcText();
+    const newText = applyPitchDelta(text, event.startChar, event.endChar, event.pitchDelta);
+    if (newText !== text) {
+      this.currentAbcText.set(newText);
+      this.onRender();
     }
   }
 

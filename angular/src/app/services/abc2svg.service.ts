@@ -103,8 +103,14 @@ export class Abc2svgService {
         if (abc) {
           const id = `_${type}_${istart}_${iend}_`;
           abc.out_svg('</g>\n');
+          // Build extra data attributes for note elements (pitch info for drag)
+          let dataAttrs = '';
+          if (type === 'note' && s && s.notes) {
+            const pits = s.notes.map((n: any) => n.pit).join(',');
+            dataAttrs = ` data-type="note" data-pit="${pits}"`;
+          }
           // Emit a transparent rect for click detection (fill-opacity inline for innerHTML safety)
-          abc.out_svg(`<rect class="abcref _${istart}_" id="${id}" fill-opacity="0" style="cursor:pointer" x="`);
+          abc.out_svg(`<rect class="abcref _${istart}_" id="${id}" fill-opacity="0" style="cursor:pointer"${dataAttrs} x="`);
           abc.out_sxsy(x, '" y="', y);
           abc.out_svg(`" width="${w.toFixed(2)}" height="${h.toFixed(2)}"/>\n`);
         }

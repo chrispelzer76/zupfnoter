@@ -30,12 +30,15 @@ export class EditorPaneComponent implements AfterViewInit, OnDestroy {
   private suppressChange = false;
 
   constructor() {
-    // React to external text changes
+    // React to external text changes (preserve cursor position for drag edits)
     effect(() => {
       const text = this.initialText();
       if (this.editor && text !== this.editor.getValue()) {
         this.suppressChange = true;
+        const cursor = this.editor.getCursorPosition();
         this.editor.setValue(text, -1);
+        this.editor.moveCursorToPosition(cursor);
+        this.editor.selection.clearSelection();
         this.suppressChange = false;
       }
     });
