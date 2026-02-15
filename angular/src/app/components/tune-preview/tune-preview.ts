@@ -15,9 +15,25 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         max-width: 100%;
         height: auto;
       }
-      :deep(.highlight rect.abcref) {
-        fill: #ffd54f !important;
+      /* abcref rects: transparent by default, clickable */
+      :deep(rect.abcref) {
+        fill: #ffd54f;
+        fill-opacity: 0;
+        cursor: pointer;
+      }
+      :deep(rect.abcref:hover) {
+        fill-opacity: 0.15;
+      }
+      /* Highlighted abcref rect */
+      :deep(rect.abcref.highlight) {
         fill-opacity: 0.5 !important;
+      }
+      /* Highlighted note group — color the note heads */
+      :deep(g.highlight) {
+        opacity: 1;
+      }
+      :deep(g.highlight path) {
+        fill: #e65100 !important;
       }
     }
   `],
@@ -52,21 +68,32 @@ export class TunePreviewComponent implements AfterViewChecked {
   /** Highlight notes in the ABC SVG by startChar/endChar range */
   highlightRange(startChar: number, endChar: number): void {
     if (!this.container?.nativeElement) return;
+    const el = this.container.nativeElement;
     // Remove old highlights
-    this.container.nativeElement.querySelectorAll('.highlight')
-      .forEach(el => el.classList.remove('highlight'));
-    // The abcref IDs encode startChar: _type_startChar_endChar_
-    this.container.nativeElement.querySelectorAll('rect.abcref').forEach(rect => {
-      const id = rect.id || rect.parentElement?.id || '';
+    el.querySelectorAll('.highlight').forEach(e => e.classList.remove('highlight'));
+    let firstHighlighted: Element | null = null;
+    // abcref rects have id="_type_startChar_endChar_" and the corresponding
+    // <g> wrapper has the same string as a class. Highlight both.
+    el.querySelectorAll('rect.abcref').forEach(rect => {
+      const id = rect.id || '';
       const m = id.match(/_\w+_(\d+)_(\d+)_/);
       if (m) {
         const s = Number(m[1]);
         const e = Number(m[2]);
         if (endChar > s && startChar < e) {
-          rect.parentElement?.classList.add('highlight');
+          // Highlight the rect itself
+          rect.classList.add('highlight');
+          // Also highlight the companion <g> that has the same class as the rect's ID
+          const g = el.querySelector(`g.${CSS.escape(id)}`);
+          g?.classList.add('highlight');
+          if (!firstHighlighted) firstHighlighted = rect;
         }
       }
     });
+    // Auto-scroll to the first highlighted element
+    if (firstHighlighted) {
+      (firstHighlighted as Element).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   /** Remove all highlights */

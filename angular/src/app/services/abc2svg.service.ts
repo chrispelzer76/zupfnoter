@@ -22,6 +22,9 @@ export interface AbcParseResult {
     tsfirst: any;
     voiceTb: any;
     info: any;
+    /** Per-voice symbol arrays captured during get_abcmodel callback
+     *  (voiceTb[v].sym is cleared by abc2svg after the callback). */
+    voiceSymbols: any[][];
   } | null;
   /** Pre-built player events from ToAudio (generated during parsing, like Ruby original) */
   playerEvents: any[] | null;
@@ -77,12 +80,34 @@ export class Abc2svgService {
     let abcModel: AbcParseResult['abcModel'] = null;
     let playerEvents: any[] | null = null;
 
+    // abc instance reference captured for use in annotation callbacks
+    let abc: any = null;
+
     const user: any = {
       img_out: (svg: string) => {
         svgParts.push(svg);
       },
       errmsg: (message: string, line: number, col: number) => {
         errors.push({ message, line, col });
+      },
+      // Annotation callbacks: inject abcref rects into SVG for click-to-highlight
+      anno_start: (type: string, istart: number, iend: number,
+                   x: number, y: number, w: number, h: number, s: any) => {
+        if (abc) {
+          const id = `_${type}_${istart}_${iend}_`;
+          abc.out_svg(`<g class="${id}">\n`);
+        }
+      },
+      anno_stop: (type: string, istart: number, iend: number,
+                  x: number, y: number, w: number, h: number, s: any) => {
+        if (abc) {
+          const id = `_${type}_${istart}_${iend}_`;
+          abc.out_svg('</g>\n');
+          // Emit a transparent rect for click detection (fill-opacity inline for innerHTML safety)
+          abc.out_svg(`<rect class="abcref _${istart}_" id="${id}" fill-opacity="0" style="cursor:pointer" x="`);
+          abc.out_sxsy(x, '" y="', y);
+          abc.out_svg(`" width="${w.toFixed(2)}" height="${h.toFixed(2)}"/>\n`);
+        }
       },
       get_abcmodel: (tsfirst: any, voiceTb: any, _annoType: any, info: any) => {
         // Compute MIDI pitches on note objects (required before transformation)
@@ -92,21 +117,26 @@ export class Abc2svgService {
           midi.add(tsfirst, voiceTb);
         }
 
-        // Build player events NOW, during parsing (like Ruby's _callback_get_abcmodel).
-        // ToAudio.add() destructively modifies repeat bars, so it must run exactly once.
-        const ToAudioClass = (window as any)['ToAudio'];
-        if (ToAudioClass) {
-          const toAudio = new ToAudioClass();
-          toAudio.add(tsfirst, voiceTb);
-          playerEvents = toAudio.clear();
+        // Capture per-voice symbol arrays NOW — abc2svg clears voiceTb[v].sym
+        // after this callback returns. Use sym.next (per-voice chain), not
+        // ts_next (global chain which may be truncated).
+        const voiceSymbols: any[][] = [];
+        for (let v = 0; v < voiceTb.length; v++) {
+          const syms: any[] = [];
+          let s = voiceTb[v]?.sym;
+          while (s) {
+            syms.push(s);
+            s = s.next;
+          }
+          voiceSymbols.push(syms);
         }
 
-        abcModel = { tsfirst, voiceTb, info };
+        abcModel = { tsfirst, voiceTb, info, voiceSymbols };
       },
     };
 
     try {
-      const abc = new this.abcClass(user);
+      abc = new this.abcClass(user);
       abc.tosvg('zupfnoter', abcText);
       const tunes = abc.get_tunes?.() ?? [];
 
@@ -124,6 +154,21 @@ export class Abc2svgService {
       this.errors.set(errors);
       return { tune: null, svgOutput: '', abcModel: null, playerEvents: null, errors };
     }
+  }
+
+  /**
+   * Build player events from the abc model using ToAudio.
+   * Must be called AFTER abc-to-harpnotes transformation is complete,
+   * because ToAudio.add() destructively modifies repeat bar symbols
+   * (breaks ts_next linked list pointers).
+   */
+  buildPlayerEvents(abcModel: { tsfirst: any; voiceTb: any }): any[] | null {
+    const ToAudioClass = (window as any)['ToAudio'];
+    if (!ToAudioClass || !abcModel?.tsfirst) return null;
+
+    const toAudio = new ToAudioClass();
+    toAudio.add(abcModel.tsfirst, abcModel.voiceTb);
+    return toAudio.clear();
   }
 
   /**

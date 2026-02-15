@@ -72,13 +72,17 @@ export class EditorPaneComponent implements AfterViewInit, OnDestroy {
       }, 300);
     });
 
-    // Emit selection changes
+    // Emit selection changes (debounced to avoid highlighting flicker)
+    let selDebounce: any;
     this.editor.selection.on('changeSelection', () => {
-      const range = this.editor.selection.getRange();
-      const doc = this.editor.session.getDocument();
-      const start = doc.positionToIndex(range.start);
-      const end = doc.positionToIndex(range.end);
-      this.selectionChanged.emit({ start, end });
+      clearTimeout(selDebounce);
+      selDebounce = setTimeout(() => {
+        const range = this.editor.selection.getRange();
+        const doc = this.editor.session.getDocument();
+        const start = doc.positionToIndex(range.start);
+        const end = doc.positionToIndex(range.end);
+        this.selectionChanged.emit({ start, end });
+      }, 150);
     });
 
     // Set initial text

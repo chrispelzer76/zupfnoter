@@ -149,8 +149,17 @@ export class AbcToHarpnotesService {
     return new Song(hnVoices);
   }
 
-  /** Group the linked-list of symbols into per-voice arrays */
+  /** Get per-voice symbol arrays from the pre-captured voiceSymbols.
+   *  These were captured in get_abcmodel callback because abc2svg clears
+   *  voiceTb[v].sym after the callback returns. */
   private groupSymbolsByVoice(tsfirst: any, voiceCount: number): any[][] {
+    const voiceSymbols = this.abcModel?.voiceSymbols;
+    if (voiceSymbols && voiceSymbols.length > 0) {
+      console.log('Symbols per voice (captured):', voiceSymbols.map((g: any[], i: number) => `v${i}:${g.length}`).join(', '));
+      return voiceSymbols;
+    }
+    // Fallback: traverse ts_next global chain (may be truncated)
+    console.warn('No pre-captured voiceSymbols, falling back to ts_next traversal');
     const groups: any[][] = Array.from({ length: voiceCount }, () => []);
     let sym = tsfirst;
     while (sym) {
@@ -160,6 +169,7 @@ export class AbcToHarpnotesService {
       }
       sym = sym.ts_next;
     }
+    console.log('Symbols per voice (ts_next):', groups.map((g, i) => `v${i}:${g.length}`).join(', '));
     return groups;
   }
 

@@ -191,14 +191,17 @@ export class LayoutService {
         }
 
         // Flowline from previous note to this one
-        if (showFlow && prevDrawable && prevPlayable && entity.isVisible && prevPlayable.isVisible) {
+        // Ruby: interrupt flowline at part boundaries (first_in_part)
+        if (showFlow && prevDrawable && prevPlayable
+            && entity.isVisible && prevPlayable.isVisible
+            && !entity.firstInPart) {
           const fromPos = this.getDrawableCenter(prevDrawable);
           const toPos = this.getDrawableCenter(noteDrawable);
           const flowStyle = isSubflow ? 'dashed' as const :
             (prevPlayable.tieStart ? 'dotted' as const : 'solid' as const);
           const flow = createFlowLine(fromPos, toPos, flowStyle);
           flow.color = variantColor;
-          flow.lineWidth = prevPlayable.firstInPart ? lineMedium : lineThin;
+          flow.lineWidth = lineThin;
           flow.visible = true;
           children.push(flow);
         }
@@ -213,23 +216,40 @@ export class LayoutService {
         entity.sheetDrawable = noteDrawable;
       }
 
-      // Jumplines (Goto entities)
+      // Jumplines (Goto entities) — rendered as L-shaped paths with arrowheads
       if (showJump) {
+        const jumplineAnchor: [number, number] = layoutConf.jumpline_anchor ?? [3, 1];
         for (const entity of voice.entities) {
           if (!(entity instanceof Goto)) continue;
           const from = entity.from;
           const to = entity.to;
           if (!from.sheetDrawable || !to.sheetDrawable) continue;
 
-          const fromCenter = this.getDrawableCenter(from.sheetDrawable);
-          const toCenter = this.getDrawableCenter(to.sheetDrawable);
+          const distance = (entity.policy?.distance ?? 2) - 1; // make symmetric: -1, 0, 1
+          const vertical = (distance + 0.5) * xSpacing;
 
-          const jumpLine = createFlowLine(fromCenter, toCenter, 'dashed');
-          jumpLine.color = colorDefault;
-          jumpLine.lineWidth = lineThick;
-          jumpLine.visible = true;
-          jumpLine.confKey = entity.confKey;
-          children.push(jumpLine);
+          const fromAnchor = entity.policy?.['from_anchor'] ?? 'after';
+          const toAnchor = entity.policy?.['to_anchor'] ?? 'before';
+
+          const jumpPaths = this.makeJumplinePath(
+            from.sheetDrawable, to.sheetDrawable,
+            vertical, jumplineAnchor, bottomUp,
+            fromAnchor, toAnchor
+          );
+
+          // Line path (L-shape)
+          const linePath = createPath(jumpPaths.line, null, from);
+          linePath.color = colorDefault;
+          linePath.lineWidth = lineThick;
+          linePath.visible = true;
+          linePath.confKey = entity.confKey;
+          children.push(linePath);
+
+          // Arrow path (filled triangle)
+          const arrowPath = createPath(jumpPaths.arrow, 'filled', from);
+          arrowPath.color = colorDefault;
+          arrowPath.visible = true;
+          children.push(arrowPath);
         }
       }
     }
@@ -246,7 +266,7 @@ export class LayoutService {
 
         const from = this.getDrawableCenter(n1.sheetDrawable);
         const to = this.getDrawableCenter(n2.sheetDrawable);
-        const synch = createFlowLine(from, to, 'solid');
+        const synch = createFlowLine(from, to, 'dashed');
         synch.color = colorDefault;
         synch.lineWidth = lineThin;
         synch.visible = true;
@@ -356,8 +376,30 @@ export class LayoutService {
     bottomUp: boolean,
     drawingHeight: number
   ): number {
-    // Look up compressed beat position, fallback to raw beat if not in map
-    const compressedBeat = beatCompressionMap.get(beat) ?? beat;
+    let compressedBeat = beatCompressionMap.get(beat);
+    if (compressedBeat === undefined) {
+      // Beat not in map — interpolate from nearest known beats
+      const knownBeats = Array.from(beatCompressionMap.keys()).sort((a, b) => a - b);
+      if (knownBeats.length === 0) {
+        compressedBeat = beat;
+      } else if (beat <= knownBeats[0]) {
+        compressedBeat = beatCompressionMap.get(knownBeats[0])!;
+      } else if (beat >= knownBeats[knownBeats.length - 1]) {
+        compressedBeat = beatCompressionMap.get(knownBeats[knownBeats.length - 1])!;
+      } else {
+        // Find surrounding beats and interpolate
+        let lo = 0, hi = knownBeats.length - 1;
+        while (lo < hi - 1) {
+          const mid = (lo + hi) >> 1;
+          if (knownBeats[mid] <= beat) lo = mid; else hi = mid;
+        }
+        const bLo = knownBeats[lo], bHi = knownBeats[hi];
+        const cLo = beatCompressionMap.get(bLo)!;
+        const cHi = beatCompressionMap.get(bHi)!;
+        const frac = (beat - bLo) / (bHi - bLo);
+        compressedBeat = cLo + frac * (cHi - cLo);
+      }
+    }
     let y = startPos + compressedBeat * beatSpacing;
     if (bottomUp) {
       y = drawingHeight - y;
@@ -542,6 +584,111 @@ export class LayoutService {
     );
     bar.color = color;
     return bar;
+  }
+
+  /**
+   * Create L-shaped jumpline path with arrowhead.
+   * Ported from Ruby's make_path_from_jumpline (harpnotes.rb:2989-3062).
+   *
+   * Path: from → horizontal → vertical → horizontal → to (with arrowhead at to)
+   */
+  private makeJumplinePath(
+    fromDrawable: any, toDrawable: any,
+    vertical: number, jumplineAnchor: [number, number],
+    bottomUp: boolean,
+    fromAnchorDir: string = 'after', toAnchorDir: string = 'before'
+  ): { line: PathCommand[]; arrow: PathCommand[] } {
+    const anchorX = jumplineAnchor[0];
+    const anchorY = jumplineAnchor[1];
+
+    const fromCenter = this.getDrawableCenter(fromDrawable);
+    const fromSize: [number, number] = fromDrawable?.size ?? [3.5, 1.7];
+    const toCenter = this.getDrawableCenter(toDrawable);
+    const toSize: [number, number] = toDrawable?.size ?? [3.5, 1.7];
+
+    // Anchor multipliers: 'before' = above (-1), 'after' = below (+1)
+    // In bottomUp mode, swap before/after
+    let fromAnchor = fromAnchorDir === 'before' ? -1 : 1;
+    let toAnchor = toAnchorDir === 'before' ? -1 : 1;
+    if (bottomUp) {
+      fromAnchor = -fromAnchor;
+      toAnchor = -toAnchor;
+    }
+
+    // Offset from center to attachment point = note size + anchor padding
+    const fromOffsetMag: [number, number] = [fromSize[0] + anchorX, fromSize[1] + anchorY];
+    const toOffsetMag: [number, number] = [toSize[0] + anchorX, toSize[1] + anchorY];
+
+    // Vertical position (relative to from by default)
+    const verticalX = fromCenter[0] + vertical;
+
+    // Orientation: direction from note to vertical line (normalized X sign)
+    const startOrientX = verticalX > fromCenter[0] ? 1 : (verticalX < fromCenter[0] ? -1 : 1);
+    const endOrientX = verticalX > toCenter[0] ? 1 : (verticalX < toCenter[0] ? -1 : 1);
+
+    // Start offset = size * [orientation, anchor_direction]
+    const startOffsetX = fromOffsetMag[0] * startOrientX;
+    const startOffsetY = fromOffsetMag[1] * fromAnchor;
+    const endOffsetX = toOffsetMag[0] * endOrientX;
+    const endOffsetY = toOffsetMag[1] * toAnchor;
+
+    // Vertical segment Y positions (adjusted by Y offset only)
+    const startVertX = verticalX;
+    const startVertY = fromCenter[1] + startOffsetY;
+    const endVertX = verticalX;
+    const endVertY = toCenter[1] + endOffsetY;
+
+    // Line points
+    const p1x = fromCenter[0] + startOffsetX;
+    const p1y = fromCenter[1] + startOffsetY;
+    const p2x = startVertX;
+    const p2y = startVertY;
+    const p3x = endVertX;
+    const p3y = endVertY;
+    const p4x = toCenter[0] + endOffsetX;
+    const p4y = toCenter[1] + endOffsetY;
+    // p4_line ends inside the arrow (2px into arrow direction)
+    const p4LineX = p4x + endOrientX * 2;
+    const p4LineY = p4y;
+
+    // Arrow points (filled triangle)
+    const a1x = p4x + endOrientX * 2.5;
+    const a1y = p4y + 1;
+    const a2x = p4x + endOrientX * 2.5;
+    const a2y = p4y - 1;
+
+    // Relative line points
+    const rp2x = p2x - p1x;
+    const rp2y = p2y - p1y;
+    const rp3x = p3x - p2x;
+    const rp3y = p3y - p2y;
+    const rp4x = p4LineX - p3x;
+    const rp4y = p4LineY - p3y;
+
+    // Relative arrow points
+    const ra1x = a1x - p4x;
+    const ra1y = a1y - p4y;
+    const ra2x = a2x - a1x;
+    const ra2y = a2y - a1y;
+    const ra3x = p4x - a2x;
+    const ra3y = p4y - a2y;
+
+    const line: PathCommand[] = [
+      ['M', p1x, p1y],
+      ['l', rp2x, rp2y],
+      ['l', rp3x, rp3y],
+      ['l', rp4x, rp4y],
+    ];
+
+    const arrow: PathCommand[] = [
+      ['M', p4x, p4y],
+      ['l', ra1x, ra1y],
+      ['l', ra2x, ra2y],
+      ['l', ra3x, ra3y],
+      ['z'],
+    ];
+
+    return { line, arrow };
   }
 
   /** Get center position of a drawable */

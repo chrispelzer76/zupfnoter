@@ -122,11 +122,17 @@ export class AppShellComponent implements OnInit, OnDestroy {
       // Step 1: Parse ABC → SVG for tune preview
       const parseResult = this.abc2svg.parse(text);
       this.tuneSvg.set(parseResult.svgOutput);
-      this.lastParseResult = parseResult;
 
-      // Step 2: ABC → Harpnotes Music Model
+      // Step 2: ABC → Harpnotes Music Model (must run BEFORE buildPlayerEvents
+      // because ToAudio destructively modifies the abc model's repeat bars)
       const [song, checksum] = this.abcToHarpnotes.transform(text);
       this.currentSong.set(song);
+
+      // Step 2b: Build player events AFTER transformation (ToAudio modifies linked list)
+      if (parseResult.abcModel) {
+        parseResult.playerEvents = this.abc2svg.buildPlayerEvents(parseResult.abcModel);
+      }
+      this.lastParseResult = parseResult;
 
       // Debug: log song details
       console.log('Song voices:', song.voices.length);
@@ -152,12 +158,34 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
       // Debug: log sheet details
       const types: Record<string, number> = {};
-      for (const d of sheet.children) { types[d.type] = (types[d.type] ?? 0) + 1; }
-      console.log('Sheet drawables:', types);
-      const ellipses = sheet.children.filter(d => d.type === 'ellipse') as any[];
+      const visTypes: Record<string, number> = {};
+      let maxY = 0, minY = Infinity;
+      let visMaxY = 0, visMinY = Infinity;
+      for (const d of sheet.children) {
+        types[d.type] = (types[d.type] ?? 0) + 1;
+        if (d.visible) visTypes[d.type] = (visTypes[d.type] ?? 0) + 1;
+        const c = (d as any).center;
+        if (c) {
+          if (c[1] > maxY) maxY = c[1];
+          if (c[1] < minY) minY = c[1];
+          if (d.visible) {
+            if (c[1] > visMaxY) visMaxY = c[1];
+            if (c[1] < visMinY) visMinY = c[1];
+          }
+        }
+      }
+      console.log('Sheet drawables (all):', types);
+      console.log('Sheet drawables (visible):', visTypes);
+      console.log('  Y range (all):', minY.toFixed(1), '→', maxY.toFixed(1));
+      console.log('  Y range (visible):', visMinY.toFixed(1), '→', visMaxY.toFixed(1));
+      const ellipses = sheet.children.filter(d => d.type === 'ellipse' && d.visible) as any[];
       if (ellipses.length > 0) {
-        console.log('  First ellipse center:', ellipses[0].center, 'size:', ellipses[0].size);
-        console.log('  Last ellipse center:', ellipses[ellipses.length - 1].center);
+        console.log('  First visible ellipse:', ellipses[0].center);
+        console.log('  Last visible ellipse:', ellipses[ellipses.length - 1].center);
+        // Log Y distribution to see where notes cluster
+        const yValues = ellipses.map((e: any) => e.center[1]).sort((a: number, b: number) => a - b);
+        const quartile = Math.floor(yValues.length / 4);
+        console.log(`  Y quartiles: Q1=${yValues[quartile]?.toFixed(1)} Q2=${yValues[2*quartile]?.toFixed(1)} Q3=${yValues[3*quartile]?.toFixed(1)} max=${yValues[yValues.length-1]?.toFixed(1)}`);
       }
 
       if (parseResult.errors.length > 0) {
@@ -216,7 +244,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.statusMessage.set(`Speed: ${speed}x`);
   }
 
-  /** Cross-highlight: a note was clicked in any panel */
+  /** Cross-highlight: a note was clicked in tune or harpnote panel */
   onNoteClicked(origin: { startChar: number; endChar: number }): void {
     // Highlight in editor
     this.editorPane?.highlightRange(origin.startChar, origin.endChar);
@@ -224,6 +252,19 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.tunePreview?.highlightRange(origin.startChar, origin.endChar);
     // Highlight in harpnote preview
     this.harpPreview?.highlightRange(origin.startChar, origin.endChar);
+  }
+
+  /** Cross-highlight: cursor/selection changed in the ABC editor */
+  onEditorSelectionChange(sel: { start: number; end: number }): void {
+    if (sel.start === sel.end) {
+      // Single cursor position — find the note at that position
+      this.tunePreview?.highlightRange(sel.start, sel.start + 1);
+      this.harpPreview?.highlightRange(sel.start, sel.start + 1);
+    } else {
+      // Range selection — highlight all matching notes
+      this.tunePreview?.highlightRange(sel.start, sel.end);
+      this.harpPreview?.highlightRange(sel.start, sel.end);
+    }
   }
 
   /** Highlight a note during playback (from onnote callback: index = startChar) */
@@ -263,9 +304,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   private async loadDemoFile(): Promise<void> {
     try {
-      const res = await fetch('assets/demos/3015_reference_sheet.abc');
+      const res = await fetch('assets/demos/zndemo_42_Ich_steh_an_deiner_krippen_hier.abc');
       if (res.ok) {
-        const text = await res.text();
+        let text = await res.text();
+        // Strip the %%%%zupfnoter.config section — it's not ABC notation
+        const sepIdx = text.indexOf(CONFIG_SEPARATOR);
+        if (sepIdx >= 0) {
+          text = text.substring(0, sepIdx).trimEnd();
+        }
         this.currentAbcText.set(text);
       }
     } catch {

@@ -10,52 +10,79 @@
          [attr.viewBox]="viewBox()"
          xmlns="http://www.w3.org/2000/svg"
          class="harpnote-svg"
-         preserveAspectRatio="xMidYMid meet">
+         preserveAspectRatio="xMinYMin meet">
 
       @for (item of s.children; track item.znid || $index) {
         @if (item.visible) {
           <!-- Ellipse (Note) -->
           @if (isEllipse(item)) {
             <g (click)="onItemClick(item)" class="clickable" [class.highlighted]="isHighlighted(item)">
+              <!-- White background for unfilled notes (matching Ruby) -->
+              @if (item.fill !== 'filled') {
+                @if (!item.rect) {
+                  <ellipse
+                    [attr.cx]="item.center[0]"
+                    [attr.cy]="item.center[1]"
+                    [attr.rx]="item.size[0]"
+                    [attr.ry]="item.size[1]"
+                    fill="white" stroke="white" stroke-width="0"
+                  />
+                } @else {
+                  <rect
+                    [attr.x]="item.center[0] - item.size[0]"
+                    [attr.y]="item.center[1] - item.size[1]"
+                    [attr.width]="item.size[0] * 2"
+                    [attr.height]="item.size[1] * 2"
+                    fill="white" stroke="white" stroke-width="0"
+                  />
+                }
+              }
+              <!-- Main shape -->
               @if (!item.rect) {
                 <ellipse
                   [attr.cx]="item.center[0]"
                   [attr.cy]="item.center[1]"
-                  [attr.rx]="item.size[0]"
-                  [attr.ry]="item.size[1]"
-                  [attr.fill]="item.fill === 'filled' ? item.color : 'none'"
+                  [attr.rx]="item.fill === 'filled' ? item.size[0] : item.size[0] - item.lineWidth / 2"
+                  [attr.ry]="item.fill === 'filled' ? item.size[1] : item.size[1] - item.lineWidth / 2"
+                  [attr.fill]="item.fill === 'filled' ? item.color : 'white'"
                   [attr.stroke]="item.color"
-                  [attr.stroke-width]="item.lineWidth"
+                  [attr.stroke-width]="item.fill === 'filled' ? 0 : item.lineWidth"
                 />
               } @else {
                 <rect
-                  [attr.x]="item.center[0] - item.size[0]"
-                  [attr.y]="item.center[1] - item.size[1]"
-                  [attr.width]="item.size[0] * 2"
-                  [attr.height]="item.size[1] * 2"
-                  [attr.fill]="item.fill === 'filled' ? item.color : 'none'"
+                  [attr.x]="item.center[0] - (item.fill === 'filled' ? item.size[0] : item.size[0] - item.lineWidth / 2)"
+                  [attr.y]="item.center[1] - (item.fill === 'filled' ? item.size[1] : item.size[1] - item.lineWidth / 2)"
+                  [attr.width]="(item.fill === 'filled' ? item.size[0] : item.size[0] - item.lineWidth / 2) * 2"
+                  [attr.height]="(item.fill === 'filled' ? item.size[1] : item.size[1] - item.lineWidth / 2) * 2"
+                  [attr.fill]="item.fill === 'filled' ? item.color : 'white'"
                   [attr.stroke]="item.color"
-                  [attr.stroke-width]="item.lineWidth"
+                  [attr.stroke-width]="item.fill === 'filled' ? 0 : item.lineWidth"
                 />
               }
-              <!-- Dotted note: small companion dot -->
+              <!-- Dotted note: white outer + colored inner (matching Ruby DOTTED_SIZE=0.5) -->
               @if (item.dotted) {
-                <circle
-                  [attr.cx]="item.center[0] + item.size[0] + 1.5"
+                <ellipse
+                  [attr.cx]="item.center[0] + item.size[0] + 0.5 + item.lineWidth"
                   [attr.cy]="item.center[1]"
-                  r="0.6"
+                  [attr.rx]="0.5 + item.lineWidth"
+                  [attr.ry]="0.5 + item.lineWidth"
+                  fill="white" stroke="white"
+                />
+                <ellipse
+                  [attr.cx]="item.center[0] + item.size[0] + 0.5 + item.lineWidth"
+                  [attr.cy]="item.center[1]"
+                  rx="0.5" ry="0.5"
                   [attr.fill]="item.color"
                 />
               }
-              <!-- Bar over note -->
+              <!-- Bar over note (rect, not line, matching Ruby) -->
               @if (item.hasBarOver) {
-                <line
-                  [attr.x1]="item.center[0] - item.size[0]"
-                  [attr.y1]="item.center[1] - item.size[1] - 1"
-                  [attr.x2]="item.center[0] + item.size[0]"
-                  [attr.y2]="item.center[1] - item.size[1] - 1"
-                  [attr.stroke]="item.color"
-                  [attr.stroke-width]="item.lineWidth * 2"
+                <rect
+                  [attr.x]="item.center[0] - item.size[0]"
+                  [attr.y]="item.center[1] - item.size[1] - 1.5 * item.lineWidth"
+                  [attr.width]="2 * item.size[0]"
+                  height="0.5"
+                  [attr.fill]="item.color"
                 />
               }
             </g>
@@ -76,49 +103,87 @@
 
           <!-- Annotation (Text) -->
           @if (isAnnotation(item)) {
-            <text
-              [attr.x]="item.center[0]"
-              [attr.y]="item.center[1]"
-              [attr.fill]="item.color"
-              [attr.font-size]="getFontSize(item.style)"
-              [attr.font-weight]="getFontWeight(item.style)"
-              [attr.font-style]="getFontStyle(item.style)"
-              [attr.text-anchor]="item.align === 'right' ? 'end' : item.align === 'center' ? 'middle' : 'start'"
-              [attr.dominant-baseline]="item.baseline"
-              (click)="onItemClick(item)"
-              class="clickable"
-            >{{ item.text }}</text>
+            <g (click)="onItemClick(item)" class="clickable" [class.highlighted]="isHighlighted(item)">
+              <text
+                [attr.x]="item.center[0] / 1.05"
+                [attr.y]="item.center[1]"
+                [attr.fill]="item.color"
+                [attr.font-size]="getAnnotationFontSize(item.style)"
+                [attr.font-family]="'Arial'"
+                [attr.font-weight]="getFontWeight(item.style)"
+                [attr.font-style]="getFontStyle(item.style)"
+                [attr.text-anchor]="item.align === 'right' ? 'end' : 'start'"
+                [attr.transform]="'scale(1.05,1) translate(0,' + getAnnotationYOffset(item.style) + ')'"
+              >
+                @if (hasMultipleLines(item.text)) {
+                  @for (line of splitTextLines(item.text); track $index) {
+                    <tspan [attr.x]="item.center[0] / 1.05" [attr.dy]="$index === 0 ? '0' : '1.2em'">{{ line }}</tspan>
+                  }
+                } @else {
+                  {{ item.text }}
+                }
+              </text>
+            </g>
           }
 
           <!-- Glyph (Rest symbols, fermata, etc.) -->
           @if (isGlyph(item)) {
-            <g [attr.transform]="'translate(' + item.center[0] + ',' + item.center[1] + ') scale(' + item.size[0] + ',' + item.size[1] + ')'"
-               (click)="onItemClick(item)"
-               class="clickable">
+            <g (click)="onItemClick(item)" class="clickable" [class.highlighted]="isHighlighted(item)">
+              <!-- White background rect for playable glyphs -->
+              @if (item.origin) {
+                <rect
+                  [attr.x]="item.center[0] - item.size[0]"
+                  [attr.y]="item.center[1] - item.size[1]"
+                  [attr.width]="item.size[0] * 2"
+                  [attr.height]="item.size[1] * 2"
+                  fill="white" stroke="white"
+                />
+              }
+              <!-- Glyph path: scale = (size * 2) / glyphHeight -->
               <path
                 [attr.d]="pathToString(item.glyphPath)"
                 [attr.fill]="item.filled ? item.color : 'none'"
                 [attr.stroke]="item.color"
-                [attr.stroke-width]="0.2"
+                [attr.stroke-width]="item.lineWidth"
+                [attr.transform]="'translate(' + item.center[0] + ',' + item.center[1] + ') scale(' + glyphScale(item) + ')'"
               />
+              <!-- Dotted glyph: white outer + colored inner -->
               @if (item.dotted) {
-                <circle
-                  [attr.cx]="item.glyphWidth / 2 + 2"
-                  cy="0"
-                  r="0.8"
+                <ellipse
+                  [attr.cx]="item.center[0] + item.size[0] + 0.5 + item.lineWidth"
+                  [attr.cy]="item.center[1]"
+                  [attr.rx]="0.5 + item.lineWidth"
+                  [attr.ry]="0.5 + item.lineWidth"
+                  fill="white" stroke="white"
+                />
+                <ellipse
+                  [attr.cx]="item.center[0] + item.size[0] + 0.5 + item.lineWidth"
+                  [attr.cy]="item.center[1]"
+                  rx="0.5" ry="0.5"
+                  [attr.fill]="item.color"
+                />
+              }
+              <!-- Bar over glyph -->
+              @if (item.hasBarOver) {
+                <rect
+                  [attr.x]="item.center[0] - item.size[0]"
+                  [attr.y]="item.center[1] - item.size[1] - 1.5 * item.lineWidth"
+                  [attr.width]="2 * item.size[0]"
+                  height="0.5"
                   [attr.fill]="item.color"
                 />
               }
             </g>
           }
 
-          <!-- Path -->
+          <!-- Path (Jumplines, tuplet curves, ties) -->
           @if (isPath(item)) {
             <path
               [attr.d]="pathToString(item.path)"
               [attr.fill]="item.fill === 'filled' ? item.color : 'none'"
               [attr.stroke]="item.color"
               [attr.stroke-width]="item.lineWidth"
+              stroke-linecap="round"
             />
           }
         }

@@ -88,6 +88,7 @@ export interface GlyphDrawable extends DrawableBase {
   glyphHeight: number;
   dotted: boolean;
   filled: boolean;
+  hasBarOver: boolean;
 }
 
 export interface ImageDrawable extends DrawableBase {
@@ -440,6 +441,7 @@ export function createGlyph(
     glyphHeight: glyph.h,
     dotted,
     filled: true,
+    hasBarOver: false,
     origin,
     confKey,
     confValue,

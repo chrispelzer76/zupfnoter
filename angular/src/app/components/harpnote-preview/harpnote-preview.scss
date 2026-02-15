@@ -1,7 +1,7 @@
 :host {
   display: block;
-  height: 100%;
-  overflow: auto;
+  /* No height constraint — component grows to fit SVG content.
+     Parent .harpnote-section has overflow:auto for scrolling. */
 }
 
 .preview-controls {
@@ -42,14 +42,23 @@
   }
 }
 
+/* Highlighted elements (notes, glyphs, annotations) */
 .highlighted ellipse,
-.highlighted rect {
-  stroke: #ffd54f;
-  stroke-width: 1;
+.highlighted rect:not([fill="white"]) {
+  stroke: #e65100;
+  stroke-width: 0.8;
 }
 
 .highlighted circle {
-  fill: #ffd54f;
+  fill: #e65100;
+}
+
+.highlighted text {
+  fill: #e65100;
+}
+
+.highlighted path {
+  fill: #e65100;
 }
 
 .no-content {
