@@ -123,15 +123,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
       const parseResult = this.abc2svg.parse(text);
       this.tuneSvg.set(parseResult.svgOutput);
 
-      // Step 2: ABC → Harpnotes Music Model (must run BEFORE buildPlayerEvents
-      // because ToAudio destructively modifies the abc model's repeat bars)
+      // Step 2: ABC → Harpnotes Music Model
+      // ToAudio now runs inside get_abcmodel callback (like Ruby original),
+      // so playerEvents are already available in parseResult.
       const [song, checksum] = this.abcToHarpnotes.transform(text);
       this.currentSong.set(song);
-
-      // Step 2b: Build player events AFTER transformation (ToAudio modifies linked list)
-      if (parseResult.abcModel) {
-        parseResult.playerEvents = this.abc2svg.buildPlayerEvents(parseResult.abcModel);
-      }
       this.lastParseResult = parseResult;
 
       // Debug: log song details

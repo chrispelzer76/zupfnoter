@@ -131,6 +131,18 @@ export class Abc2svgService {
           voiceSymbols.push(syms);
         }
 
+        // Run ToAudio INSIDE the callback (like the Ruby original) because
+        // abc2svg may modify tsfirst/ts_next after the callback returns.
+        // This is safe: voiceSymbols uses per-voice sym.next chain (independent
+        // of ts_next), so ToAudio's destructive ts_next modifications don't
+        // affect the harpnotes transformation.
+        const ToAudioClass = (window as any)['ToAudio'];
+        if (ToAudioClass) {
+          const toAudio = new ToAudioClass();
+          toAudio.add(tsfirst, voiceTb);
+          playerEvents = toAudio.clear();
+        }
+
         abcModel = { tsfirst, voiceTb, info, voiceSymbols };
       },
     };
@@ -154,21 +166,6 @@ export class Abc2svgService {
       this.errors.set(errors);
       return { tune: null, svgOutput: '', abcModel: null, playerEvents: null, errors };
     }
-  }
-
-  /**
-   * Build player events from the abc model using ToAudio.
-   * Must be called AFTER abc-to-harpnotes transformation is complete,
-   * because ToAudio.add() destructively modifies repeat bar symbols
-   * (breaks ts_next linked list pointers).
-   */
-  buildPlayerEvents(abcModel: { tsfirst: any; voiceTb: any }): any[] | null {
-    const ToAudioClass = (window as any)['ToAudio'];
-    if (!ToAudioClass || !abcModel?.tsfirst) return null;
-
-    const toAudio = new ToAudioClass();
-    toAudio.add(abcModel.tsfirst, abcModel.voiceTb);
-    return toAudio.clear();
   }
 
   /**
